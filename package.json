@@ -8,7 +8,7 @@
     "minehut"
   ],
   "files": [
-    "./lib"
+    "/lib"
   ],
   "scripts": {
     "build": "tsc -p ."
