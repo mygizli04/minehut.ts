@@ -2,13 +2,13 @@
   "name": "minehut-ts",
   "version": "1.0.1",
   "description": "Incomplete minehut library",
-  "main": "/lib/index.js",
-  "types": "/lib/index.d.ts",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "keywords": [
     "minehut"
   ],
   "files": [
-    "/lib"
+    "./lib"
   ],
   "scripts": {
     "build": "tsc -p ."
