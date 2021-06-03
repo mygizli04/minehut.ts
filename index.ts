@@ -2,6 +2,7 @@
 
 const loginURL = 'https://authentication-service-prod.superleague.com/v1/user/login/ghost'
 const minetronURL = 'http://minetron.ml'
+import fetch from 'node-fetch'
 
 /**
  * Login with a HAR file. Designed to be used when Minetron is not available.

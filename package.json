@@ -25,5 +25,9 @@
   "homepage": "https://github.com/mygizli04/minehut.ts#readme",
   "devDependencies": {
     "typescript": "^4.3.2"
+  },
+  "dependencies": {
+    "@types/node-fetch": "^2.5.10",
+    "node-fetch": "^2.6.1"
   }
 }
