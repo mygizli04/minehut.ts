@@ -1,0 +1,25 @@
+{
+  "name": "minehut.ts",
+  "version": "1.0.0",
+  "description": "Incomplete minehut library",
+  "main": "/lib/index.js",
+  "types": "/lib/index.d.ts",
+  "keywords": ["minehut"],
+  "files": ["/lib"],
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mygizli04/minehut.ts.git"
+  },
+  "author": "mygizli04",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mygizli04/minehut.ts/issues"
+  },
+  "homepage": "https://github.com/mygizli04/minehut.ts#readme",
+  "devDependencies": {
+    "typescript": "^4.3.2"
+  }
+}
