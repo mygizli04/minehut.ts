@@ -33,6 +33,38 @@ export class Plugin {
     }
 }
 
+async function fetchAuthorized(endpoint: string, method?: string, headers?: HeadersInit, body?: BodyInit): Promise<any> {
+    let options: {
+        method?: string,
+        headers?: any,
+        body?: any
+    } = {}
+
+    if (method) {
+        options.method = method
+    }
+
+    if (headers) {
+        options.headers = headers
+    }
+    else {
+        options.headers = {
+            "Content-Type": "application/json"
+        }
+    }
+
+    options.headers.authorization = loginInfo.authorization
+    options.headers["x-session-id"] = loginInfo.xSessionId
+
+    if (body) {
+        options.body = body
+    }
+
+    return new Promise((resolve,reject) => {
+        fetch(apiURL + endpoint, options).then(res => res.json().then(resolve))
+    })
+}
+
 /**
  * Fetch all plugins publicly available from Minehut
  * 
@@ -145,6 +177,15 @@ export async function minetronLogin(token: string) {
     })
 }
 
+let loginInfo: {
+    userId: string,
+    servers: Array<string>,
+    authorization: string,
+    xSessionId: string,
+    slgSessionId: string,
+    xSlgUser: string
+}
+
 async function ghostLogin(xSlgUser: string, xSlgSession: string, minehutSessionId: string) { //Ghost login that will be used by both login types.
     return new Promise<{
         userId: string,
@@ -166,14 +207,15 @@ async function ghostLogin(xSlgUser: string, xSlgSession: string, minehutSessionI
                 slgSessionId: xSlgSession
             })
         }).then(res => res.json().then(res => {
-            resolve({
+            loginInfo = {
                 userId: res.minehutSessionData._id,
                 servers: res.minehutSessionData.servers,
                 authorization: res.minehutSessionData.token,
                 xSessionId: res.minehutSessionData.sessionId,
                 slgSessionId: res.slgSessionData.slgSessionId,
                 xSlgUser: res.slgSessionData.slgUserId
-            })
+            }
+            resolve(loginInfo)
         }))
     })
 }
