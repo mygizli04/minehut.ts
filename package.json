@@ -1,5 +1,5 @@
 {
-  "name": "minehut.ts",
+  "name": "minehut-ts",
   "version": "1.0.0",
   "description": "Incomplete minehut library",
   "main": "/lib/index.js",
