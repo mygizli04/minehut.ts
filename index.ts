@@ -1,8 +1,54 @@
 //Originally designed for https://github.com/MrEnxo/minetron-js
 
+//URL's must not have / at the end.
 const loginURL = 'https://authentication-service-prod.superleague.com/v1/user/login/ghost'
 const minetronURL = 'http://minetron.ml'
+const apiURL = "https://api.minehut.com"
 import fetch from 'node-fetch'
+
+export class Plugin {
+    id: string
+    created: Date
+    credits: number
+    description: string
+    extendedDescription: string
+    disabled: boolean
+    fileName: string
+    htmlExtendedDesc: string
+    lastUpdated: Date
+    name: string
+    version: string
+    constructor (plugin: any) {
+        this.id = plugin._id
+        this.created = new Date(plugin.created)
+        this.credits = plugin.credits
+        this.description = plugin.desc
+        this.extendedDescription = plugin.desc_extended
+        this.disabled = plugin.disabled
+        this.fileName = plugin.file_name
+        this.htmlExtendedDesc = plugin.html_desc_extended
+        this.lastUpdated = plugin.last_updated
+        this.name = plugin.name
+        this.version = plugin.version
+    }
+}
+
+/**
+ * Fetch all plugins publicly available from Minehut
+ * 
+ * @returns Array of Plugin objects.
+ */
+export async function getPublicPlugins(): Promise<Array<Plugin>> {
+    return new Promise((resolve, reject) => {
+        fetch(apiURL + '/plugins_public').then(res => res.json().then(res => {
+            let plugins: Array<Plugin> = []
+            res.all.forEach((plugin: any) => {
+                plugins.push(new Plugin(plugin))
+            })
+            resolve(plugins)
+        }))
+    })
+}
 
 /**
  * Login with a HAR file. Designed to be used when Minetron is not available.
