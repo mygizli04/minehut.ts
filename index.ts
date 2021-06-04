@@ -15,10 +15,60 @@ let loginInfo: {
     xSlgUser: string
 }
 
+function getServerId(server: Server | string) {
+    if (typeof server === "string") {
+        return server
+    }
+    else {
+        return server.id
+    }
+}
+
+class File {
+    blocked: boolean
+    directory: boolean
+    name: string
+    constructor (file: any) {
+        this.name = file.name
+        this.directory = file.directory
+
+        if (file.directory) {
+            this.blocked = false
+        }
+        else {
+            this.blocked = file.blocked
+        }
+    }
+}
+/**
+ * Lists the given directory.
+ * 
+ * @param  {Server|string} server The server that the directory will be listed from. Can be Server object or server id as a string.
+ * @param  {string} path Directory that will be listed. (root it /)
+ * 
+ * @returns {Promise<File[]>}
+ */
+export async function listDir(server: Server | string, path: string): Promise<File[]> {
+    return new Promise((resolve, reject) => {
+        fetchAuthorized('/file/' + getServerId(server) + '/list/' + path).then(res => {
+            if (res.error) {
+                reject(res.error)
+            }
+            else {
+                let files: Array<File> = []
+                res.files.forEach((file: any) => {
+                    files.push(new File(file))
+                })
+                resolve(files)
+            }
+        })
+    })
+}
+
 /**
  * Fetches all servers available to the currently logged in user.
  * 
- * @returns {Promise} Resolves to Array of Server objects.
+ * @returns {Promise<Array<Server>>}
  */
 export async function fetchServers(): Promise<Array<Server>> {
     return new Promise((resolve, reject) => {
@@ -176,7 +226,48 @@ class Server {
         this.timeNoPlayers = server.time_no_players
         this.visiblity = server.visibility
     }
+
+    start() {
+        if (this.serviceOnline) {
+            return startServer(this.id)
+        }
+        else {
+            return startService(this.id)
+        }
+    }
 }
+
+async function startServer(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        fetchAuthorized('/server/' + id + '/start', 'POST').then(res => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }
+        })
+    })
+}
+
+async function startService(id: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+        fetchAuthorized('/server/' + id + '/start_service', 'POST').then(res => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                if (res.error) {
+                    reject(res.error)
+                }
+                else {
+                    reject(res)
+                }
+            }
+        })
+    })
+}
+
 
 class Plugin {
     id: string
@@ -233,14 +324,14 @@ async function fetchAuthorized(endpoint: string, method?: string, headers?: Head
     }
 
     return new Promise((resolve,reject) => {
-        fetch(apiURL + endpoint, options).then(res => res.json().then(resolve))
+        fetch(apiURL + endpoint, options).then(res => res.json().then(resolve).catch(reject))
     })
 }
 
 /**
  * Fetch all plugins publicly available from Minehut
  * 
- * @returns {Promise} Resolves to array of Plugin objects.
+ * @returns {Promise<Array<Plugin>>} Resolves to array of Plugin objects.
  */
 export async function getPublicPlugins(): Promise<Array<Plugin>> {
     return new Promise((resolve, reject) => {
@@ -258,7 +349,7 @@ export async function getPublicPlugins(): Promise<Array<Plugin>> {
  * Login with a HAR file. Designed to be used when Minetron is not available.
  * 
  * @param  {string} file The HAR file as a string.
- * @returns {Promise} Login object
+ * @returns {loginObject} Login object
  */
 export async function harLogin(file: string) {
     return new Promise<{
@@ -328,11 +419,22 @@ export async function harLogin(file: string) {
 }
 
 /**
+ * @typedef {Object} loginObject
+ * 
+ * @property {string} userId Minehut user id
+ * @property {Array<string>} servers Array of server id's
+ * @property {string} authorization Authorization token
+ * @property {string} xSessionId Current session id (minehut)
+ * @property {string} slgSessionId Current session id (superleauge)
+ * @property {string} xSlgUser Superleague user id
+ */
+
+/**
  * Login with minetron. Recommended form of login.
  * 
  * @see https://github.com/MrEnxo/minetron-server
  * @param  {string} token Minetron login token.
- * @returns {Promise} Login object
+ * @returns {loginObject} Login object
  */
 export async function minetronLogin(token: string) {
     return new Promise<{
