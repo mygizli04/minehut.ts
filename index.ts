@@ -15,6 +15,22 @@ let loginInfo: {
     xSlgUser: string
 }
 
+/**
+ * Read files from minehut.
+ * 
+ * @param  {Server|string} server Server id or Server object
+ * @param  {string} path File path you want to read.
+ * 
+ * @returns {Promise<string>}
+ */
+export async function readFile(server: Server | string, path: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+        fetchAuthorized('/file/' + getServerId(server) + '/read/' + path).then(res => {
+            resolve(res.content)
+        })
+    })
+}
+
 function getServerId(server: Server | string) {
     if (typeof server === "string") {
         return server
@@ -23,12 +39,41 @@ function getServerId(server: Server | string) {
         return server.id
     }
 }
+/**
+ * Same as fetchServers() but returns a single server instead of an array.
+ * 
+ * @param  {string} serverName
+ * 
+ * @returns {Promise<Server>}
+ */
+export async function fetchServer(serverName: string): Promise<Server> {
+    return new Promise((resolve, reject) => {
+        fetchServers().then(servers => {
+            let selected: Server | undefined
+            servers.forEach(server => {
+                if (serverName === server.name) {
+                    selected = server
+                }
+            })
 
-class File {
+            if (selected) {
+                resolve(selected)
+            }
+            else {
+                reject("The server could not be found.")
+            }
+        })
+    })
+}
+
+class FileInfo {
     blocked: boolean
     directory: boolean
     name: string
-    constructor (file: any) {
+    server!: Server
+    content?: string
+
+    constructor (file: any, server: Server | string) {
         this.name = file.name
         this.directory = file.directory
 
@@ -38,26 +83,44 @@ class File {
         else {
             this.blocked = file.blocked
         }
+
+        if (typeof server === "string") {
+            fetchServer(server).then(server => {
+                this.server = server
+            })
+        }
+        else {
+            this.server = server
+        }
+    }
+
+    async fetch() {
+        return new Promise((resolve, reject) => {
+            readFile(this.server ,this.directory + '/' + this.name).then(res => {
+                this.content = res
+                resolve(res)
+            })
+        })
     }
 }
 /**
  * Lists the given directory.
  * 
  * @param  {Server|string} server The server that the directory will be listed from. Can be Server object or server id as a string.
- * @param  {string} path Directory that will be listed. (root it /)
+ * @param  {string} path Directory that will be listed. (root is /)
  * 
  * @returns {Promise<File[]>}
  */
-export async function listDir(server: Server | string, path: string): Promise<File[]> {
+export async function listDir(server: Server | string, path: string): Promise<FileInfo[]> {
     return new Promise((resolve, reject) => {
         fetchAuthorized('/file/' + getServerId(server) + '/list/' + path).then(res => {
             if (res.error) {
                 reject(res.error)
             }
             else {
-                let files: Array<File> = []
+                let files: Array<FileInfo> = []
                 res.files.forEach((file: any) => {
-                    files.push(new File(file))
+                    files.push(new FileInfo(file, server))
                 })
                 resolve(files)
             }
