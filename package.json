@@ -8,11 +8,11 @@
     "minehut"
   ],
   "files": [
-    "/lib",
-    "!*.map"
+    "/lib"
   ],
   "scripts": {
-    "build": "tsc -p ."
+    "build": "tsc -p .",
+    "prepack": "rm -rf ./lib/*.map && tsc -p . --sourceMap false"
   },
   "repository": {
     "type": "git",

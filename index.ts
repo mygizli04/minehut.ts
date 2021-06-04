@@ -1,4 +1,4 @@
-//Originally designed for https://github.com/MrEnxo/minetron-js
+//Originally designed for https://github.com/MrEnxo/minetron-react
 
 //URL's must not have / at the end.
 const loginURL = 'https://authentication-service-prod.superleague.com/v1/user/login/ghost'
@@ -6,7 +6,179 @@ const minetronURL = 'http://minetron.ml'
 const apiURL = "https://api.minehut.com"
 import fetch from 'node-fetch'
 
-export class Plugin {
+let loginInfo: {
+    userId: string,
+    servers: Array<string>,
+    authorization: string,
+    xSessionId: string,
+    slgSessionId: string,
+    xSlgUser: string
+}
+
+/**
+ * Fetches all servers available to the currently logged in user.
+ * 
+ * @returns {Promise} Resolves to Array of Server objects.
+ */
+export async function fetchServers(): Promise<Array<Server>> {
+    return new Promise((resolve, reject) => {
+        if (!loginInfo) {
+            reject("You are not logged in.")
+            return
+        }
+        fetchAuthorized('/servers/' + loginInfo.userId + '/all_data').then(res => {
+            if (res.expired) {
+                reject()
+            }
+            else {
+                let servers: Array<Server> = []
+                res.forEach((server: any) => {
+                    servers.push(new Server(server))
+                })
+                resolve(servers)
+            }
+        })
+    })
+}
+
+class Server {
+
+    id: string
+    activePlugins: Array<string>
+    activeServerPlan: string
+    activeServerPlanDetails: {
+        adFree: boolean,
+        alwaysOnline: boolean,
+        backupSlots: number,
+        chargeInterval: number,
+        cost: number,
+        id: string,
+        index: number,
+        maxPlayers: number,
+        maxPlugins: number,
+        planName: string
+    }
+    backupSlots: number
+    categories: Array<string>
+    created: Date
+    creditsPerDay: number
+    exited: boolean
+    hibernationPrepStartTime: number
+    installedContentPacks: []
+    lastOnline: Date
+    maxPlayers: number
+    maxRam: number
+    metrics: {}
+    motd: string
+    name: string
+    lowerName: string
+    online: boolean
+    owner: string
+    platform: string
+    playerCount: number
+    players: []
+    port: number
+    purchasedIcons: []
+    purchasedPlugins: []
+    serverIp: string
+    serverPlan: string
+    serverPlanDetails: {
+        adFree: boolean,
+        alwaysOnline: boolean,
+        backupSlots: number,
+        chargeInterval: number,
+        cost: number,
+        id: string,
+        index: number,
+        maxPlayers: number,
+        maxPlugins: number,
+        planName: string
+    }
+    serverPort: number
+    serverProperites: {
+        allow_flight: boolean,
+        allow_nether: boolean,
+        announce_player_achievements: boolean,
+        difficulty: number,
+        enable_command_block: boolean,
+        force_gamemode: boolean,
+        gamemode: number,
+        generate_structures: boolean,
+        generator_settings: string,
+        hardcore: boolean,
+        level_name: string,
+        level_seed: string,
+        level_type: string,
+        max_players: number,
+        pvp: boolean,
+        resource_pack: string,
+        resource_pack_sha1: string,
+        spawn_animals: boolean,
+        spawn_mobs: boolean,
+        spawn_protection: number,
+        view_distance: number
+    }
+    serviceOnline: boolean
+    shutdownReason: string
+    shutdownScheduled: boolean
+    startedAt: number
+    starting: boolean
+    status: string
+    stoppedAt: number
+    stopping: boolean
+    storageNode: string
+    suspended: boolean
+    timeNoPlayers: number
+    visiblity: boolean
+
+    constructor (server: any) {
+        this.id = server._id
+        this.activePlugins = server.active_plugins
+        this.activeServerPlan = server.active_server_plan
+        this.activeServerPlanDetails = server.active_server_plan_detials
+        this.backupSlots = server.backup_slots
+        this.categories = server.categories
+        this.created = new Date(server.creation)
+        this.creditsPerDay = server.credits_per_day
+        this.exited = server.exited
+        this.hibernationPrepStartTime = server.hibernation_prep_start_time
+        this.installedContentPacks = server.installed_content_packs
+        this.lastOnline = new Date(server.last_online)
+        this.maxPlayers = server.max_players
+        this.maxRam = server.max_ram
+        this.metrics = server.metrics
+        this.motd = server.motd
+        this.name = server.name
+        this.lowerName = server.name_lower
+        this.online = server.online
+        this.owner = server.owner
+        this.platform = server.platform
+        this.playerCount = server.player_count
+        this.players = server.players
+        this.port = server.port
+        this.purchasedIcons = server.purchased_icons
+        this.purchasedPlugins = server.purchased_plugins
+        this.serverIp = server.server_ip
+        this.serverPlan = server.server_plan
+        this.serverPlanDetails = server.server_plan_details
+        this.serverPort = server.server_port
+        this.serverProperites = server.server_properties
+        this.serviceOnline = server.service_online
+        this.shutdownReason = server.shutdown_reason
+        this.shutdownScheduled = server.shutdown_scheduled
+        this.startedAt = server.started_at
+        this.starting = server.starting
+        this.status = server.status
+        this.stoppedAt = server.stopped_at
+        this.stopping = server.stopping
+        this.storageNode = server.storage_node
+        this.suspended = server.suspended
+        this.timeNoPlayers = server.time_no_players
+        this.visiblity = server.visibility
+    }
+}
+
+class Plugin {
     id: string
     created: Date
     credits: number
@@ -68,7 +240,7 @@ async function fetchAuthorized(endpoint: string, method?: string, headers?: Head
 /**
  * Fetch all plugins publicly available from Minehut
  * 
- * @returns Array of Plugin objects.
+ * @returns {Promise} Resolves to array of Plugin objects.
  */
 export async function getPublicPlugins(): Promise<Array<Plugin>> {
     return new Promise((resolve, reject) => {
@@ -160,7 +332,7 @@ export async function harLogin(file: string) {
  * 
  * @see https://github.com/MrEnxo/minetron-server
  * @param  {string} token Minetron login token.
- * @returns Login object
+ * @returns {Promise} Login object
  */
 export async function minetronLogin(token: string) {
     return new Promise<{
@@ -175,15 +347,6 @@ export async function minetronLogin(token: string) {
             ghostLogin(loginobj.slgSessionData.slgUserId, loginobj.slgSessionData.slgSessionId, loginobj.minehutSessionData.sessionId).then(resolve)
         }))
     })
-}
-
-let loginInfo: {
-    userId: string,
-    servers: Array<string>,
-    authorization: string,
-    xSessionId: string,
-    slgSessionId: string,
-    xSlgUser: string
 }
 
 async function ghostLogin(xSlgUser: string, xSlgSession: string, minehutSessionId: string) { //Ghost login that will be used by both login types.
