@@ -6,13 +6,44 @@ const minetronURL = 'http://minetron.ml'
 const apiURL = "https://api.minehut.com"
 import fetch from 'node-fetch'
 
-let loginInfo: {
+let loginInfo: LoginInfo;
+
+interface LoginInfo {
     userId: string,
     servers: Array<string>,
     authorization: string,
     xSessionId: string,
     slgSessionId: string,
     xSlgUser: string
+}
+
+interface unownedServer {
+    id: string,
+    online: boolean,
+    name: string,
+    maxPlayers: number,
+    playerCount: number,
+    serverPlan: string,
+    status: string,
+    startedAt: number,
+}
+
+/** 
+* Get All Servers
+* 
+* @returns {Promise<Array<Object>>} Array of servers
+*/
+export async function getAllServers(): Promise<Array<unownedServer>> {
+    return new Promise((resolve, reject) => {
+        fetch(apiURL + '/servers_all').then(res => res.json().then(servers => {
+            servers.forEach((server: any, index: number, array: any) => {
+                server.serverPlan = server.server_plan
+                delete server.server_plan
+                array[index] = server
+            })
+            resolve(servers)
+        }))
+    })
 }
 
 /**
@@ -415,14 +446,7 @@ export async function getPublicPlugins(): Promise<Array<Plugin>> {
  * @returns {loginObject} Login object
  */
 export async function harLogin(file: string) {
-    return new Promise<{
-        userId: string,
-        servers: Array<string>,
-        authorization: string,
-        xSessionId: string,
-        slgSessionId: string,
-        xSlgUser: string
-    }>((resolve, reject) => {
+    return new Promise<LoginInfo>((resolve, reject) => {
         let entries: Array<{
             request: {
                 method: string,
@@ -477,7 +501,7 @@ export async function harLogin(file: string) {
             }
         })
 
-        ghostLogin(response!.slgSessionData.slgUserId, response!.slgSessionData.slgSessionId, response!.minehutSessionData.sessionId).then(resolve)
+        ghostLogin(response!.slgSessionData.slgUserId, response!.slgSessionData.slgSessionId).then(resolve)
     })
 }
 
@@ -499,30 +523,26 @@ export async function harLogin(file: string) {
  * @param  {string} token Minetron login token.
  * @returns {loginObject} Login object
  */
+// Nice - Creator Of Minetron: MrEnxo
 export async function minetronLogin(token: string) {
-    return new Promise<{
-        userId: string,
-        servers: Array<string>,
-        authorization: string,
-        xSessionId: string,
-        slgSessionId: string,
-        xSlgUser: string
-    }>((resolve, reject) => {
+    return new Promise<LoginInfo>((resolve, reject) => {
         fetch(minetronURL + '/api/loginobject/' + token).then(res => res.json().then(loginobj => {
-            ghostLogin(loginobj.slgSessionData.slgUserId, loginobj.slgSessionData.slgSessionId, loginobj.minehutSessionData.sessionId).then(resolve)
+            loginInfo = {
+                userId: loginobj.minehutSessionData._id,
+                servers: loginobj.minehutSessionData.servers,
+                authorization: loginobj.minehutSessionData.token,
+                xSessionId: loginobj.minehutSessionData.sessionId,
+                slgSessionId: loginobj.slgSessionData.slgSessionId,
+                xSlgUser: loginobj.slgSessionData.slgUserId
+            }
+            resolve(loginInfo)
         }))
     })
 }
 
-async function ghostLogin(xSlgUser: string, xSlgSession: string, minehutSessionId: string) { //Ghost login that will be used by both login types.
-    return new Promise<{
-        userId: string,
-        servers: Array<string>,
-        authorization: string,
-        xSessionId: string,
-        slgSessionId: string,
-        xSlgUser: string
-    }>((resolve, reject) => {
+import * as uuid from 'uuid'
+async function ghostLogin(xSlgUser: string, xSlgSession: string) { //Ghost login that used to be used by both login types.
+    return new Promise<LoginInfo>((resolve, reject) => {
         fetch(loginURL, {
             headers: {
                 "x-slg-user": xSlgUser,
@@ -531,7 +551,7 @@ async function ghostLogin(xSlgUser: string, xSlgSession: string, minehutSessionI
             },
             method: 'POST',
             body: JSON.stringify({
-                minehutSessionId: minehutSessionId, // :O
+                minehutSessionId: uuid.v4(), // :O
                 slgSessionId: xSlgSession
             })
         }).then(res => res.json().then(res => {
