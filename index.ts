@@ -28,6 +28,22 @@ interface unownedServer {
     startedAt: number,
 }
 
+/**
+ * @param  {string} name Name of the server you want to create.
+ * 
+ * @returns {Promise<Server>}
+ */
+export async function createServer(name: string): Promise<Server> {
+    return new Promise((resolve, reject) => {
+        fetchAuthorized('/servers/create', 'POST', {}, {
+            name: name,
+            platform: 'java'
+        }).then(res => {
+            resolve(new Server(res.server))
+        })
+    })
+}
+
 /** 
 * Get All Servers
 * 
@@ -155,6 +171,28 @@ export async function listDir(server: Server | string, path: string): Promise<Fi
                 })
                 resolve(files)
             }
+        })
+    })
+}
+
+/**
+ * Uploads your file to minehut
+ * 
+ * @param {Server|string} The ServerID
+ * @param {string} the filename
+ * @param {object} File in binary
+ * 
+ * @returns {Promise<void>}
+ */
+export async function uploadFile(server: Server | string, filename: string, file: object): Promise<void> {
+    return new Promise((resolve, reject) => {
+        fetchAuthorized(`/file/upload/${getServerId(server)}//${filename}`, "POST", {}, { file }).then(res => {
+            if (JSON.stringify(res) === "{}") {
+                resolve()
+            }
+            else {
+                reject(res)
+            }        
         })
     })
 }
@@ -329,6 +367,110 @@ class Server {
             return startService(this.id)
         }
     }
+
+    async hibernate(): Promise<void> {
+        return new Promise((resolve ,reject) => {
+            fetchAuthorized('/server/' + this.id + '/destroy_service').then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+
+    async stop(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + this.id + '/shutdown').then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+
+    async restart(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + this.id + '/restart').then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+
+    async changeVisibility(state: boolean): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + this.id + '/visibility', 'POST', {}, {visiblity: state}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+
+    async sendServerCommand(command: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + this.id + '/command', 'POST', {}, {command: command}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+
+    async changeName(name: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + this.id + '/change_name', 'POST', {}, {name: name}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+
+    async changeServerProperty(field: string, value: string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + this.id + '/visibility', 'POST', {}, {field: field, value: value}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+
+    async installPlugin(plugin: string): Promise<void> {
+        return new Promise((resolve ,reject) => {
+            fetchAuthorized('/server/' + this.id + '/install_plugin', 'POST', {}, {plugin}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
 }
 
 async function startServer(id: string): Promise<void> {
@@ -390,10 +532,10 @@ class Plugin {
     }
 }
 
-async function fetchAuthorized(endpoint: string, method?: string, headers?: HeadersInit, body?: BodyInit): Promise<any> {
+async function fetchAuthorized(endpoint: string, method?: string, headers?: object, body?: object): Promise<any> {
     let options: {
         method?: string,
-        headers?: any,
+        headers?: any, //this specific one is any because typescript is stupid
         body?: any
     } = {}
 
