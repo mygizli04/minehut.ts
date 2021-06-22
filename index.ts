@@ -5,6 +5,7 @@ const loginURL = 'https://authentication-service-prod.superleague.com/v1/user/lo
 const minetronURL = 'http://minetron.ml'
 const apiURL = "https://api.minehut.com"
 import fetch from 'node-fetch'
+import * as uuid from 'uuid'
 
 let loginInfo: LoginInfo;
 
@@ -26,6 +27,17 @@ interface unownedServer {
     serverPlan: string,
     status: string,
     startedAt: number,
+}
+/**
+ * This method is intended to be used when you have another login system implemented.
+ * Just updates internal variables then returns the argument. 
+ * 
+ * @param  {LoginInfo} login Login information
+ * @returns The login argument.
+ */
+export function _altLogin(login: LoginInfo): LoginInfo {
+    loginInfo = login
+    return login
 }
 
 /**
@@ -89,7 +101,7 @@ function getServerId(server: Server | string) {
 /**
  * Same as fetchServers() but returns a single server instead of an array.
  * 
- * @param  {string} serverName
+ * @param  {string} serverName Name of the server to fetch.
  * 
  * @returns {Promise<Server>}
  */
@@ -150,6 +162,7 @@ class FileInfo {
         })
     }
 }
+
 /**
  * Lists the given directory.
  * 
@@ -359,15 +372,41 @@ class Server {
         this.visiblity = server.visibility
     }
 
-    start() {
-        if (this.serviceOnline) {
-            return startServer(this.id)
-        }
-        else {
-            return startService(this.id)
-        }
+    /**
+     * Starts the server.
+     * 
+     * @returns Promise<void>
+     */
+    async start(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (this.serviceOnline) {
+                startServer(this.id).then(res => {
+                    if (JSON.stringify(res) === "{}") {
+                        resolve()
+                    }
+                    else {
+                        reject()
+                    }
+                })
+            }
+            else {
+                startService(this.id).then(res => {
+                    if (JSON.stringify(res) === "{}") {
+                        resolve()
+                    }
+                    else {
+                        reject()
+                    }
+                })
+            }
+        })
     }
 
+    /**
+     * Hibernate the server.
+     * 
+     * @returns Promise<void>
+     */
     async hibernate(): Promise<void> {
         return new Promise((resolve ,reject) => {
             fetchAuthorized('/server/' + this.id + '/destroy_service').then(res => {
@@ -380,7 +419,11 @@ class Server {
             })
         })
     }
-
+    /**
+     * Stop the server.
+     * 
+     * @returns Promise<void>
+     */
     async stop(): Promise<void> {
         return new Promise((resolve, reject) => {
             fetchAuthorized('/server/' + this.id + '/shutdown').then(res => {
@@ -393,7 +436,10 @@ class Server {
             })
         })
     }
-
+    /**
+     * Restart the server.
+     * @returns Promise<void>
+     */
     async restart(): Promise<void> {
         return new Promise((resolve, reject) => {
             fetchAuthorized('/server/' + this.id + '/restart').then(res => {
@@ -406,7 +452,12 @@ class Server {
             })
         })
     }
-
+    /**
+     * Change the visibility of the server.
+     * 
+     * @param  {boolean} state Whether the server is visible or not.
+     * @returns Promise<void>
+     */
     async changeVisibility(state: boolean): Promise<void> {
         return new Promise((resolve, reject) => {
             fetchAuthorized('/server/' + this.id + '/visibility', 'POST', {}, {visiblity: state}).then(res => {
@@ -419,7 +470,13 @@ class Server {
             })
         })
     }
-
+    
+    /**
+     * Send console command to server.
+     * 
+     * @param  {string} command Console command that will be executed.
+     * @returns Promise<void>
+     */
     async sendServerCommand(command: string): Promise<void> {
         return new Promise((resolve, reject) => {
             fetchAuthorized('/server/' + this.id + '/command', 'POST', {}, {command: command}).then(res => {
@@ -433,6 +490,12 @@ class Server {
         })
     }
 
+    /**
+     * Change the name of the server.
+     * 
+     * @param  {string} name The new name of the server.
+     * @returns Promise<void>
+     */
     async changeName(name: string): Promise<void> {
         return new Promise((resolve, reject) => {
             fetchAuthorized('/server/' + this.id + '/change_name', 'POST', {}, {name: name}).then(res => {
@@ -446,6 +509,13 @@ class Server {
         })
     }
 
+    /**
+     * Change server.properties
+     * 
+     * @param  {string} field Field to change.
+     * @param  {string} value The value it should be.
+     * @returns Promise
+     */
     async changeServerProperty(field: string, value: string): Promise<void> {
         return new Promise((resolve, reject) => {
             fetchAuthorized('/server/' + this.id + '/visibility', 'POST', {}, {field: field, value: value}).then(res => {
@@ -459,6 +529,13 @@ class Server {
         })
     }
 
+    /**
+     * Install a plugin to the server.
+     * 
+     * @param  {string} plugin Plugin id.
+     * @returns Promise<void>
+     * @deprecated Plugin installing through the Server object is deprecated. Install through a Plugin object instead.
+     */
     async installPlugin(plugin: string): Promise<void> {
         return new Promise((resolve ,reject) => {
             fetchAuthorized('/server/' + this.id + '/install_plugin', 'POST', {}, {plugin}).then(res => {
@@ -470,6 +547,230 @@ class Server {
                 }
             })
         })
+    }
+
+    /**
+     * Save the world of the server.
+     * @returns Promise<void>
+     */
+    async saveWorld(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + this.id + '/save', 'POST').then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+    
+    /**
+     * Reset the world of the server.
+     * @returns Promise<void>
+     */
+    async resetWorld(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + this.id + '/reset_world', 'POST').then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+
+    /**
+     * List available backups.
+     * 
+     * @returns Promise<{backups: Array<Backup>, rollingBackup: RollingBackup}>
+     */
+    async listBackups(): Promise<BackupResponse> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/v1/server/' + this.id + '/backups').then(res => {
+                let ret: {
+                    backups: Array<Backup>,
+                    rollingBackup: RollingBackup
+                } = {backups: [], rollingBackup: new RollingBackup(res.rolling_backup)}
+
+                res.backups.forEach((backup: any) => {
+                    ret.backups.push(new Backup(backup))
+                })
+
+                resolve(ret)
+            })
+        })
+    }
+
+    /*async createBackup(): Promise<BackupResponse> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/v1/server/' + this.id + '/backup/create', 'POST', {}, {backup_id: uuid.v4()}).then(res => {
+                resolve(res)
+            })
+        })
+    }*/
+}
+
+interface BackupResponse {
+    backups: Array<Backup>,
+    rollingBackup: RollingBackup
+}
+
+class Backup {
+    id: string
+    content: {}
+    dataRemoved: boolean
+    deleted: boolean
+    description: string
+    disabled: boolean
+    lastBackupTime: Date
+    pending: boolean
+    serverId: string
+    serverModelSnapshot: {
+        id: string,
+        activeIcon: string,
+        activePlugins: Array<string>,
+        backupSlots: number,
+        categories: [],
+        creation: Date,
+        creditsPerDay: number,
+        installedContentPacks: [],
+        key: string,
+        lastOnline: Date,
+        motd: string,
+        name: string,
+        lowerName: string,
+        owner: string,
+        platform: 'java',
+        port: number,
+        purchasedIcons: Array<string>,
+        purchasedPlugins: [],
+        serverPlan: string,
+        serverProperites: {
+            allowFlight: boolean,
+            allowNether: boolean,
+            announcePlayerAchievements: boolean,
+            difficulty: number,
+            enableCommandBlocks: boolean,
+            forceGamemode: boolean,
+            gamemode: number,
+            generateStructures: boolean,
+            generatorSettings: string,
+            hardcore: boolean,
+            levelName: string,
+            levelSeed: string,
+            levelType: string,
+            maxPlayers: number,
+            pvp: boolean,
+            resourcePack: string,
+            resourcePackSha1: string,
+            spawnAnimals: boolean,
+            spawnMobs: boolean,
+            spawnProtection: number,
+            viewDistance: number
+        },
+        storageNode: string,
+        suspended: boolean,
+        visibility: boolean
+    }
+
+    constructor (backup: any) {
+        this.id = backup._id
+        this.content = backup.content
+        this.dataRemoved = backup.data_removed
+        this.deleted = backup.deleted
+        this.description = backup.description
+        this.disabled = backup.disabled
+        this.lastBackupTime = new Date(backup.last_backup_time)
+        this.pending = backup.pending
+        this.serverId = backup.server_id
+        this.serverModelSnapshot = {
+            id: backup.server_model_snapshot._id,
+            activeIcon: backup.server_model_snapshot.active_icon,
+            activePlugins: backup.server_model_snapshot.active_plugins,
+            backupSlots: backup.server_model_snapshot.backup_slots,
+            categories: backup.server_model_snapshot.categories,
+            creation: new Date(backup.server_model_snapshot.creation),
+            creditsPerDay: backup.server_model_snapshot.credits_per_day,
+            installedContentPacks: backup.server_model_snapshot.installed_content_packs,
+            key: backup.server_model_snapshot.key,
+            lastOnline: new Date(backup.server_model_snapshot.last_online),
+            motd: backup.server_model_snapshot.motd,
+            name: backup.server_model_snapshot.name,
+            lowerName: backup.server_model_snapshot.name_lower,
+            owner: backup.server_model_snapshot.owner,
+            platform: 'java',
+            port: backup.server_model_snapshot.port,
+            purchasedIcons: backup.server_model_snapshot.purchased_icons,
+            purchasedPlugins: backup.server_model_snapshot.purchased_plugins,
+            serverPlan: backup.server_model_snapshot.server_plan,
+            serverProperites: {
+                allowFlight: backup.server_model_snapshot.server_properties.allow_flight,
+                allowNether: backup.server_model_snapshot.server_properties.allow_nether,
+                announcePlayerAchievements: backup.server_model_snapshot.server_properties.announce_player_achievements,
+                difficulty: backup.server_model_snapshot.server_properties.difficulty,
+                enableCommandBlocks: backup.server_model_snapshot.server_properties.enable_command_block,
+                forceGamemode: backup.server_model_snapshot.server_properties.force_gamemode,
+                gamemode: backup.server_model_snapshot.server_properties.gamemode,
+                generateStructures: backup.server_model_snapshot.server_properties.generate_structures,
+                generatorSettings: backup.server_model_snapshot.server_properties.generator_settings,
+                hardcore: backup.server_model_snapshot.server_properties.hardcore,
+                levelName: backup.server_model_snapshot.server_properties.level_name,
+                levelSeed: backup.server_model_snapshot.server_properties.level_seed,
+                levelType: backup.server_model_snapshot.server_properties.level_type,
+                maxPlayers: backup.server_model_snapshot.server_properties.max_players,
+                pvp: backup.server_model_snapshot.server_properties.pvp,
+                resourcePack: backup.server_model_snapshot.server_properties.resource_pack,
+                resourcePackSha1: backup.server_model_snapshot.server_properties.resource_pack_sha1,
+                spawnAnimals: backup.server_model_snapshot.server_properties.spawn_animals,
+                spawnMobs: backup.server_model_snapshot.server_properties.spawn_mobs,
+                spawnProtection: backup.server_model_snapshot.server_properties.spawn_protection,
+                viewDistance: backup.server_model_snapshot.server_properties.view_distance
+            },
+            storageNode: backup.server_model_snapshot.storage_node,
+            suspended: backup.server_model_snapshot.suspended,
+            visibility: backup.server_model_snapshot.visibility
+        }
+    }
+
+    /**
+     * Restore this backup.
+     * 
+     * @returns Promise
+     */
+    async restore(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/v1/server/' + this.serverId + '/backup/apply', 'POST', {}, {backup_id: this.id}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject(res)
+                }
+            })
+        })
+    }
+}
+
+class RollingBackup {
+    id: string
+    etag: string
+    lastBackupTime: string
+    lastModified: string
+    metaData: {
+        "content-type": "application/octet-stream"
+        mtime: string
+    }
+
+    constructor (backup: any) {
+        this.id = backup._id
+        this.etag = backup.etag
+        this.lastBackupTime = backup.last_backup_time
+        this.lastModified = backup.lastModified
+        this.metaData = backup.metaData
     }
 }
 
@@ -529,6 +830,60 @@ class Plugin {
         this.lastUpdated = plugin.last_updated
         this.name = plugin.name
         this.version = plugin.version
+    }
+    /**
+     * Install this plugin to a server.
+     * @param  {Server|string} server Server to install this plugin to.
+     * @returns Promise<void>
+     */
+    async install(server: Server | string): Promise<void> {
+        return new Promise((resolve, reject) => {
+            fetchAuthorized('/server/' + getServerId(server) + '/install_plugin', 'POST', {}, {plugin: this.id}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject()
+                }
+            })
+        })
+    }
+
+    /**
+     * Uninstall this plugin from a server.
+     * @param  {Server|string} server Server to uninstall the plugin from.
+     * @returns Promise<void>
+     */
+    async uninstall(server: Server | string): Promise<void> {
+        return new Promise((resolve,reject) => {
+            fetchAuthorized('/server/' + getServerId(server) + '/remove_plugin', 'POST', {}, {plugin: this.id}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject()
+                }
+            })
+        })
+    }
+    
+    /**
+     * Reset plugin configurations.
+     * 
+     * @param  {Server|string} server The server the plugin data will be deleted from.
+     * @returns Promise<void>
+     */
+    async resetPlugin(server: Server | string): Promise<void> {
+        return new Promise((resolve,reject) => {
+            fetchAuthorized('/server/' + getServerId(server) + '/remove_plugin_data', 'POST', {}, {plugin: this.id}).then(res => {
+                if (JSON.stringify(res) === "{}") {
+                    resolve()
+                }
+                else {
+                    reject()
+                }
+            })
+        })
     }
 }
 
@@ -669,6 +1024,10 @@ export async function harLogin(file: string) {
 export async function minetronLogin(token: string) {
     return new Promise<LoginInfo>((resolve, reject) => {
         fetch(minetronURL + '/api/loginobject/' + token).then(res => res.json().then(loginobj => {
+            if (loginobj.error) {
+                reject(loginobj.error)
+                return
+            }
             loginInfo = {
                 userId: loginobj.minehutSessionData._id,
                 servers: loginobj.minehutSessionData.servers,
@@ -682,7 +1041,6 @@ export async function minetronLogin(token: string) {
     })
 }
 
-import * as uuid from 'uuid'
 async function ghostLogin(xSlgUser: string, xSlgSession: string) { //Ghost login that used to be used by both login types.
     return new Promise<LoginInfo>((resolve, reject) => {
         fetch(loginURL, {
