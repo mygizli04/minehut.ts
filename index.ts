@@ -9,7 +9,7 @@ import * as uuid from 'uuid'
 
 let loginInfo: LoginInfo;
 
-interface LoginInfo {
+export interface LoginInfo {
     userId: string,
     servers: Array<string>,
     authorization: string,
