@@ -9,6 +9,9 @@ import * as uuid from 'uuid'
 
 let loginInfo: LoginInfo;
 
+/**
+ * Login information about the logged in user.
+ */
 export interface LoginInfo {
     userId: string,
     servers: Array<string>,
