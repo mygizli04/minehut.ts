@@ -31,6 +31,86 @@ interface unownedServer {
     status: string,
     startedAt: number,
 }
+
+interface rawUser {
+    servers:                  string[];
+    order_servers:            string[];
+    max_servers:              number;
+    flags:                    string[];
+    _id:                      string;
+    email:                    string;
+    email_verified:           boolean;
+    email_sent_at:            number;
+    created_at:               number;
+    birthday:                 string;
+    __v:                      number;
+    email_code:               string;
+    last_password_change:     number;
+    last_login:               number;
+    slg_shadow_profile_id:    string;
+    minecraft_link_code:      any;
+    minecraft_last_link_time: number;
+    minecraft_name:           string;
+    minecraft_uuid:           string;
+    slg_profile_id:           string;
+    credits:                  number;
+}
+
+export interface User {
+    servers:                  string[];
+    serverOrder:            string[];
+    maxServers:              number;
+    flags:                    string[];
+    id:                      string;
+    email:                    string;
+    emailVerified:           boolean;
+    emailSentAt:            number;
+    createdAt:               Date;
+    birthday:                 string;
+    __v:                      number;
+    email_code:               string;
+    lastPasswordChange:     Date;
+    lastLogin:               Date;
+    slgShadowProfileId:    string;
+    minecraftLinkCode:      any;
+    minecraftLastLinkTime: Date;
+    minecraftName:           string;
+    minecraftUuid:           string;
+    slgProfileId:           string;
+    credits:                  number;
+}
+
+
+export async function getUserInfo(userId: string): Promise<User> {
+    return new Promise((resolve, reject) => {
+        fetchAuthorized('/v2/user/' + userId).then((user: {user: rawUser}) => {
+            resolve({
+                __v: user.user.__v,
+                birthday: user.user.birthday,
+                createdAt: new Date(user.user.created_at),
+                credits: user.user.credits,
+                email: user.user.email,
+                emailSentAt: user.user.email_sent_at,
+                emailVerified: user.user.email_verified,
+                flags: user.user.flags,
+                email_code: user.user.email_code,
+                id: user.user._id,
+                lastLogin: new Date(user.user.last_login),
+                lastPasswordChange: new Date(user.user.last_password_change),
+                maxServers: user.user.max_servers,
+                minecraftLastLinkTime: new Date(user.user.minecraft_last_link_time),
+                minecraftLinkCode: user.user.minecraft_link_code,
+                minecraftName: user.user.minecraft_name,
+                minecraftUuid: user.user.minecraft_uuid,
+                serverOrder: user.user.order_servers,
+                servers: user.user.servers,
+                slgProfileId: user.user.slg_profile_id,
+                slgShadowProfileId: user.user.slg_profile_id
+            })
+        }) 
+    });
+}
+
 /**
  * This method is intended to be used when you have another login system implemented.
  * Just updates internal variables then returns the argument. 
