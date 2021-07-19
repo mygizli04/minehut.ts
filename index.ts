@@ -470,24 +470,10 @@ export class Server {
     async start(): Promise<void> {
         return new Promise((resolve, reject) => {
             if (this.serviceOnline) {
-                startServer(this.id).then(res => {
-                    if (JSON.stringify(res) === "{}") {
-                        resolve()
-                    }
-                    else {
-                        reject(res)
-                    }
-                })
+                startServer(this.id).then(resolve).catch(reject)
             }
             else {
-                startService(this.id).then(res => {
-                    if (JSON.stringify(res) === "{}") {
-                        resolve()
-                    }
-                    else {
-                        reject(res)
-                    }
-                })
+                startService(this.id).then(resolve).catch(reject)
             }
         })
     }
