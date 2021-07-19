@@ -475,7 +475,7 @@ export class Server {
                         resolve()
                     }
                     else {
-                        reject()
+                        reject(res)
                     }
                 })
             }
@@ -485,7 +485,7 @@ export class Server {
                         resolve()
                     }
                     else {
-                        reject()
+                        reject(res)
                     }
                 })
             }
