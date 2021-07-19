@@ -56,6 +56,9 @@ interface rawUser {
     credits:                  number;
 }
 
+/**
+ * Minehut user representation.
+ */
 export interface User {
     servers:                  string[];
     serverOrder:            string[];
@@ -80,7 +83,11 @@ export interface User {
     credits:                  number;
 }
 
-
+/**
+ * Gets user info 
+ * 
+ * @param userId Current user id
+ */
 export async function getUserInfo(userId: string): Promise<User> {
     return new Promise((resolve, reject) => {
         fetchAuthorized('/v2/user/' + userId).then((user: {user: rawUser}) => {
@@ -319,7 +326,7 @@ export async function fetchServers(): Promise<Array<Server>> {
     })
 }
 
-class Server {
+export class Server {
 
     id: string
     activePlugins: Array<string>
