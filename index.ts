@@ -992,7 +992,7 @@ async function fetchAuthorized(endpoint: string, method?: string, headers?: obje
     options.headers["x-session-id"] = loginInfo.xSessionId
 
     if (body) {
-        options.body = body
+        options.body = JSON.stringify(body)
     }
 
     return new Promise((resolve,reject) => {
