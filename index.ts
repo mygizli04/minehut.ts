@@ -979,7 +979,7 @@ async function fetchAuthorized(endpoint: string, method?: string, headers?: obje
         options.method = method
     }
 
-    if (headers) {
+    if (headers && JSON.stringify(headers) !== "{}") {
         options.headers = headers
     }
     else {
