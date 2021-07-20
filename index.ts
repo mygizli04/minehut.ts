@@ -560,7 +560,7 @@ export class Server {
      */
     async sendServerCommand(command: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            fetchAuthorized('/server/' + this.id + '/command', 'POST', {}, {command: command}).then(res => {
+            fetchAuthorized('/server/' + this.id + '/send_command', 'POST', {}, {command: command}).then(res => {
                 if (JSON.stringify(res) === "{}") {
                     resolve()
                 }
