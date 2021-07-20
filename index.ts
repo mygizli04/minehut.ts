@@ -175,7 +175,12 @@ export async function getAllServers(): Promise<Array<unownedServer>> {
 export async function readFile(server: Server | string, path: string): Promise<string> {
     return new Promise((resolve, reject) => {
         fetchAuthorized('/file/' + getServerId(server) + '/read/' + path).then(res => {
-            resolve(res.content)
+            if (res.error) {
+                reject(res.error)
+            }
+            else {
+                resolve(res.content)
+            }
         })
     })
 }
