@@ -220,11 +220,6 @@ export async function fetchServer(serverName: string): Promise<Server> {
     })
 }
 
-import fs from 'fs'
-harLogin(fs.readFileSync("./minehut.har").toString()).then(async () => {
-    listDir(await fetchServer("youParkour"), "/plugins")
-})
-
 class FileInfo {
     blocked: boolean
     directory: boolean
@@ -275,10 +270,6 @@ class FileInfo {
         });
     }
 }
-
-process.on("unhandledRejection", (...e) => {
-    debugger
-})
 
 /**
  * Lists the given directory.
