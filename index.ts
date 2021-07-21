@@ -220,16 +220,28 @@ export async function fetchServer(serverName: string): Promise<Server> {
     })
 }
 
+import fs from 'fs'
+harLogin(fs.readFileSync("./minehut.har").toString()).then(async () => {
+    listDir(await fetchServer("youParkour"), "/plugins")
+})
+
 class FileInfo {
     blocked: boolean
     directory: boolean
     name: string
     server!: Server
     content?: string
+    path: string
 
-    constructor (file: any, server: Server | string) {
+    constructor (file: {
+        name: string,
+        directory: boolean,
+        blocked: boolean,
+        size: number
+    }, server: Server | string, path: string) {
         this.name = file.name
         this.directory = file.directory
+        this.path = path
 
         if (file.directory) {
             this.blocked = false
@@ -250,13 +262,23 @@ class FileInfo {
 
     async fetch() {
         return new Promise((resolve, reject) => {
-            readFile(this.server ,this.directory + '/' + this.name).then(res => {
+            readFile(this.server ,this.directory + '/' + this.directory + "/" + this.name).then(res => {
                 this.content = res
                 resolve(res)
             })
         })
     }
+
+    async delete() {
+        return new Promise(async (resolve, reject) => {
+            resolve(await fetchAuthorized("/file/" + this.server.id + "/delete/" + this.path + "/" + this.name, "POST"))
+        });
+    }
 }
+
+process.on("unhandledRejection", (...e) => {
+    debugger
+})
 
 /**
  * Lists the given directory.
@@ -275,7 +297,7 @@ export async function listDir(server: Server | string, path: string): Promise<Fi
             else {
                 let files: Array<FileInfo> = []
                 res.files.forEach((file: any) => {
-                    files.push(new FileInfo(file, server))
+                    files.push(new FileInfo(file, server, path))
                 })
                 resolve(files)
             }
@@ -686,6 +708,7 @@ export class Server {
         })
     }
 
+    // I don't know why this is commented out but there should be a reason?
     /*async createBackup(): Promise<BackupResponse> {
         return new Promise((resolve, reject) => {
             fetchAuthorized('/v1/server/' + this.id + '/backup/create', 'POST', {}, {backup_id: uuid.v4()}).then(res => {
@@ -693,6 +716,12 @@ export class Server {
             })
         })
     }*/
+
+    async getPlugins(): Promise<Plugin[]> {
+        return new Promise(async (resolve, reject) => {
+            resolve((await getPublicPlugins()).filter(value => this.activePlugins.includes(value.id)))
+        });
+    }
 }
 
 interface BackupResponse {
@@ -965,6 +994,10 @@ class Plugin {
                 }
             })
         })
+    }
+
+    isInstalled(server: Server): boolean {
+        return server.activePlugins.includes(this.id)
     }
 }
 
