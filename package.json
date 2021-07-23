@@ -1,6 +1,6 @@
 {
   "name": "minehut-ts",
-  "version": "1.11.0",
+  "version": "1.11.1",
   "description": "Incomplete minehut library",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
