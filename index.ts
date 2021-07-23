@@ -220,7 +220,7 @@ export async function fetchServer(serverName: string): Promise<Server> {
     })
 }
 
-class FileInfo {
+export class FileInfo {
     blocked: boolean
     directory: boolean
     name: string
@@ -711,6 +711,12 @@ export class Server {
     async getPlugins(): Promise<Plugin[]> {
         return new Promise(async (resolve, reject) => {
             resolve((await getPublicPlugins()).filter(value => this.activePlugins.includes(value.id)))
+        });
+    }
+
+    async createFile(path: string, content = ""): Promise<FileInfo> {
+        return new Promise(async (resolve, reject) => {
+            resolve(new FileInfo(await fetchAuthorized("/file/" + this.id + "/edit/" + path, "POST", {}, {content}), this, path))
         });
     }
 }
