@@ -257,7 +257,7 @@ export class FileInfo {
 
     async fetch(): Promise<string> {
         return new Promise((resolve, reject) => {
-            readFile(this.server, this.path).then(res => {
+            readFile(this.server, this.path + "/" + this.name).then(res => {
                 this.content = res
                 resolve(res)
             })
